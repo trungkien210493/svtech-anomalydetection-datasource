@@ -1,32 +1,32 @@
-import React, { ChangeEvent } from 'react';
-import { InlineField, Input } from '@grafana/ui';
-import { QueryEditorProps } from '@grafana/data';
+import React from 'react';
+import { QueryEditorProps, DataSourceRef, DataSourceInstanceSettings } from '@grafana/data';
 import { DataSource } from '../datasource';
 import { MyDataSourceOptions, MyQuery } from '../types';
+import { DataSourcePicker } from '@grafana/runtime';
+import { Input } from '@grafana/ui';
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
-export function QueryEditor({ query, onChange, onRunQuery }: Props) {
-  const onQueryTextChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...query, queryText: event.target.value });
+export function QueryEditor (props: Props) {  
+  const onDataSourceChange = (ref: DataSourceRef) => {
+    const { onChange, query } = props;
+    onChange({ ...query, datasource: ref, target_datasource: ref });
   };
 
-  const onConstantChange = (event: ChangeEvent<HTMLInputElement>) => {
-    onChange({ ...query, constant: parseFloat(event.target.value) });
-    // executes the query
-    onRunQuery();
-  };
+    const { datasource} = props.query;
 
-  const { queryText, constant } = query;
-
-  return (
-    <div className="gf-form">
-      <InlineField label="Constant">
-        <Input onChange={onConstantChange} value={constant} width={8} type="number" step="0.1" />
-      </InlineField>
-      <InlineField label="Query Text" labelWidth={16} tooltip="Not used yet">
-        <Input onChange={onQueryTextChange} value={queryText || ''} />
-      </InlineField>
-    </div>
-  );
+    return (
+      <div className="gf-form">
+      <DataSourcePicker
+        filter={ds => ds.meta.id != "grafana-grpc-server-example-datasource"}
+        placeholder="Select a data source"
+        onChange={(newSettings: DataSourceInstanceSettings) => {
+          onDataSourceChange({ type: newSettings.type, uid: newSettings.uid });
+        }}
+        noDefault={true}
+        current={datasource?.type !== "grafana-grpc-server-example-datasource" ? datasource : undefined}
+      />
+      <Input value={'test query' || ''} />
+      </div>
+    );
 }
