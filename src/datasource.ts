@@ -6,7 +6,7 @@ import {
   LoadingState
 } from '@grafana/data';
 import { DataSourceWithBackend, getDataSourceSrv, toDataQueryError } from '@grafana/runtime';
-import { cloneDeep, groupBy } from 'lodash';
+import { cloneDeep } from 'lodash';
 
 import { MyQuery, MyDataSourceOptions } from './types';
 import { forkJoin, from, Observable, of, OperatorFunction } from 'rxjs';
@@ -24,32 +24,29 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
 
   query(request: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
     const queries = request.targets.filter((t) => {
-      return t.datasource?.uid !== '-- Mixed --';
+      return t.target_datasource?.type !== 'svtech-anomalydetection-datasource' && t.target_datasource != null;
     });
     if (!queries.length) {
       return of({ data: [] }); // nothing
     }
-    const sets: { [key: string]: MyQuery[] } = groupBy(queries, 'datasource.uid');
+    queries.forEach(function(v){ delete v.datasource; v.datasource =  v.target_datasource;});
     const mixed: BatchedQueries[] = [];
-    console.log(sets)
-    for (const key in sets) {
-      const targets = sets[key];
-
+    queries.forEach((query, i) => {
       mixed.push({
-        datasource: getDataSourceSrv().get(targets[0].datasource, request.scopedVars),
-        targets,
+          datasource: getDataSourceSrv().get(query.target_datasource, request.scopedVars),
+          targets: [query]
       });
-    }
-
-    // Missing UIDs?
-    if (!mixed.length) {
-      return of({ data: [] }); // nothing
-    }
-    console.log(mixed);
-    return this.batchQueries(mixed, request);
+    });
+    // return of({ data: [] });
+    let result = this.batchQueries(mixed, request);
+    return result;
   }
 
   batchQueries(mixed: BatchedQueries[], request: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
+    const queries_anomaly_backend = request.targets.filter((t) => {
+      return t.target_datasource?.type === 'svtech-anomalydetection-datasource' || t.target_datasource == null;
+    });
+    console.log(queries_anomaly_backend);
     const runningQueries = mixed.filter(this.isQueryable).map((query, i) =>
       from(query.datasource).pipe(
         mergeMap((api: DataSourceApi) => {
@@ -84,8 +81,14 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
         })
       )
     );
+    
+    return forkJoin(runningQueries).pipe(flattenResponses(), map(this.finalizeResponses), map(n => this.generateAlarm(n, queries_anomaly_backend)), mergeAll());
+  }
 
-    return forkJoin(runningQueries).pipe(flattenResponses(), map(this.finalizeResponses), mergeAll());
+  private generateAlarm(responses: DataQueryResponse[], queries: MyQuery[]): DataQueryResponse[] {
+    console.log(queries);
+    console.log(responses);
+    return responses;
   }
 
   private isQueryable(query: BatchedQueries): boolean {

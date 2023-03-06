@@ -18,13 +18,12 @@ export function QueryEditor (props: Props) {
     return (
       <div className="gf-form">
       <DataSourcePicker
-        filter={ds => ds.meta.id != "grafana-grpc-server-example-datasource"}
         placeholder="Select a data source"
         onChange={(newSettings: DataSourceInstanceSettings) => {
           onDataSourceChange({ type: newSettings.type, uid: newSettings.uid });
         }}
         noDefault={true}
-        current={datasource?.type !== "grafana-grpc-server-example-datasource" ? datasource : undefined}
+        current={datasource?.uid !== "-- Mixed --" ? datasource : undefined}
       />
       <Input value={'test query' || ''} />
       </div>
