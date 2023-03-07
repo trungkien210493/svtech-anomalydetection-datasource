@@ -7,10 +7,10 @@ interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> 
 
 export function ConfigEditor(props: Props) {
   const { onOptionsChange, options } = props;
-  const onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const onBackendChange = (event: ChangeEvent<HTMLInputElement>) => {
     const jsonData = {
       ...options.jsonData,
-      path: event.target.value,
+      backend: event.target.value,
     };
     onOptionsChange({ ...options, jsonData });
   };
@@ -44,11 +44,11 @@ export function ConfigEditor(props: Props) {
 
   return (
     <div className="gf-form-group">
-      <InlineField label="Path" labelWidth={12}>
+      <InlineField label="Backend Path" labelWidth={12}>
         <Input
-          onChange={onPathChange}
-          value={jsonData.path || ''}
-          placeholder="json field returned to frontend"
+          onChange={onBackendChange}
+          value={jsonData.backend || ''}
+          placeholder="REST api to generate alarm"
           width={40}
         />
       </InlineField>
