@@ -1,24 +1,18 @@
-import React, { ChangeEvent, useEffect } from 'react';
+import React, { ChangeEvent, useEffect, useState } from 'react';
 import { QueryEditorProps, DataSourceRef, DataSourceInstanceSettings } from '@grafana/data';
 import { DataSource } from '../datasource';
 import { MyDataSourceOptions, MyQuery } from '../types';
 import { DataSourcePicker } from '@grafana/runtime';
-import { LegacyForms, TextArea, Field, InlineFieldRow, InlineField } from '@grafana/ui';
+import { TextArea, Field, InlineFieldRow, InlineField, Cascader } from '@grafana/ui';
 
 
-const { FormField } = LegacyForms;
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
-export function QueryEditor (this: any, props: Props) {  
+export function QueryEditor (this: any, props: Props) {
+  const [options, setOptions] = useState([]);
   const onDataSourceChange = (ref: DataSourceRef) => {
     const { onChange, query } = props;
     onChange({ ...query, datasource: ref, target_datasource: ref });
-  };
-
-  const onMethodChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onChange, query } = props;
-    onChange({ ...query, method: event.target.value });
-    // props.onRunQuery();
   };
 
   const onParamsChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -27,21 +21,24 @@ export function QueryEditor (this: any, props: Props) {
     // props.onRunQuery();
   };
   useEffect(() => {
-    const url = "https://api.adviceslip.com/advice";
-
+    const url = "http://localhost:3456/api/list";
     const fetchData = async () => {
       try {
         const response = await fetch(url);
         const json = await response.json();
-        console.log(json);
+        setOptions(json);
       } catch (error) {
         console.log("error", error);
       }
     };
-
     fetchData();
   }, []);
-  const { datasource, method, params } = props.query;
+  const { datasource, params } = props.query;
+  const onSelect = (val: string) => {
+    const { onChange, query } = props;
+    onChange({ ...query, method: val });
+    props.onRunQuery();
+  };
 
   return (
     <div>
@@ -57,13 +54,7 @@ export function QueryEditor (this: any, props: Props) {
           />
         </InlineField>
         <InlineField>
-          <FormField
-            labelWidth={8}
-            value={method || ''}
-            onChange={onMethodChange}
-            label="Method"
-            tooltip="Detection Algorithm"
-          />
+          <Cascader options={options} onSelect={onSelect}/>
         </InlineField>
       </InlineFieldRow>
       <InlineFieldRow>
