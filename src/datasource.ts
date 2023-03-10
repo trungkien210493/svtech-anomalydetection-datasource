@@ -18,8 +18,10 @@ export interface BatchedQueries {
 }
 
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
+  jsonData: any;
   constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
     super(instanceSettings);
+    this.jsonData = instanceSettings.jsonData;
   }
 
   query(request: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
@@ -42,11 +44,14 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     return result;
   }
 
+  getBackend() {
+    return this.jsonData.backend;
+  }
+
   batchQueries(mixed: BatchedQueries[], request: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
     const queries_anomaly_backend = request.targets.filter((t) => {
       return t.target_datasource?.type === 'svtech-anomalydetection-datasource' || t.target_datasource == null;
     });
-    console.log(queries_anomaly_backend);
     const runningQueries = mixed.filter(this.isQueryable).map((query, i) =>
       from(query.datasource).pipe(
         mergeMap((api: DataSourceApi) => {
@@ -86,9 +91,32 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
   }
 
   private generateAlarm(responses: DataQueryResponse[], queries: MyQuery[]): DataQueryResponse[] {
-    console.log(queries);
-    console.log(responses);
-    return responses;
+    const refIDs: string[] = [];
+    if (queries.length === 0) {
+      // If there is no query to generate anomaly
+      return responses;
+    } else {
+      for (let i = 0; i < queries.length; i++) {
+        if (queries[i].series !== null) {
+          // Get all refid need to perform
+          refIDs.push(queries[i].series);
+        }
+      }
+      // To do: async for each refID
+      // Send all data to backend - Start
+      const query_alarm = responses.filter((t) => {
+        return refIDs.includes(t.data[0].refId);
+      })
+      console.log(query_alarm);
+      // Send all data to backend - End
+      const result = fetch(this.jsonData.backend + '/anomalies', {
+        method: 'POST',
+        body: JSON.stringify(query_alarm),
+      }).then(res => res.json())
+      console.log(result)
+      console.log(responses);
+      return responses;
+    }
   }
 
   private isQueryable(query: BatchedQueries): boolean {

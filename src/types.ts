@@ -2,6 +2,7 @@ import { DataQuery, DataSourceJsonData, DataSourceRef } from '@grafana/data';
 
 export interface MyQuery extends DataQuery {
   method?: string;
+  series: string;
   params: string;
   target_datasource: DataSourceRef;
 }

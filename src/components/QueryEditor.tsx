@@ -3,12 +3,12 @@ import { QueryEditorProps, DataSourceRef, DataSourceInstanceSettings } from '@gr
 import { DataSource } from '../datasource';
 import { MyDataSourceOptions, MyQuery } from '../types';
 import { DataSourcePicker } from '@grafana/runtime';
-import { TextArea, Field, InlineFieldRow, InlineField, Cascader } from '@grafana/ui';
+import { TextArea, Field, InlineFieldRow, InlineField, Cascader, Button, Input } from '@grafana/ui';
 
 
 type Props = QueryEditorProps<DataSource, MyQuery, MyDataSourceOptions>;
 
-export function QueryEditor (this: any, props: Props) {
+export function QueryEditor (this: any, props: Props, newds: DataSourceInstanceSettings) {
   const [options, setOptions] = useState([]);
   const onDataSourceChange = (ref: DataSourceRef) => {
     const { onChange, query } = props;
@@ -18,10 +18,15 @@ export function QueryEditor (this: any, props: Props) {
   const onParamsChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const { onChange, query } = props;
     onChange({ ...query, params: event.target.value });
-    // props.onRunQuery();
   };
+
+  const onSeriesChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onChange, query } = props;
+    onChange({ ...query, series: event.target.value });
+  };
+
   useEffect(() => {
-    const url = "http://localhost:3456/api/list";
+    const url = props.datasource.getBackend() + "/list";
     const fetchData = async () => {
       try {
         const response = await fetch(url);
@@ -32,13 +37,17 @@ export function QueryEditor (this: any, props: Props) {
       }
     };
     fetchData();
-  }, []);
-  const { datasource, params } = props.query;
+  }, [props.datasource]);
+  const { datasource, params, series } = props.query;
+
   const onSelect = (val: string) => {
     const { onChange, query } = props;
     onChange({ ...query, method: val });
-    props.onRunQuery();
   };
+
+  const onClick = () => {
+    props.onRunQuery();
+  }
 
   return (
     <div>
@@ -53,8 +62,11 @@ export function QueryEditor (this: any, props: Props) {
             current={datasource?.uid !== "-- Mixed --" ? datasource : undefined}
           />
         </InlineField>
-        <InlineField>
+        <InlineField label="Algorithm">
           <Cascader options={options} onSelect={onSelect}/>
+        </InlineField>
+        <InlineField label="Series">
+          <Input onChange={onSeriesChange} value={series || ''} />
         </InlineField>
       </InlineFieldRow>
       <InlineFieldRow>
@@ -68,6 +80,7 @@ export function QueryEditor (this: any, props: Props) {
           </Field>
           </InlineField>
         </InlineFieldRow>
+      <Button icon="sync" onClick={onClick}>Run query</Button>
     </div>
   );
 }
