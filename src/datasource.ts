@@ -90,7 +90,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
     return forkJoin(runningQueries).pipe(flattenResponses(), map(this.finalizeResponses), map(n => this.generateAlarm(n, queries_anomaly_backend)), mergeAll());
   }
 
-  private generateAlarm(responses: DataQueryResponse[], queries: MyQuery[]): DataQueryResponse[] {
+  generateAlarm(responses: DataQueryResponse[], queries: MyQuery[]): DataQueryResponse[] {
     const refIDs: string[] = [];
     if (queries.length === 0) {
       // If there is no query to generate anomaly
@@ -107,13 +107,16 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
       const query_alarm = responses.filter((t) => {
         return refIDs.includes(t.data[0].refId);
       })
-      console.log(query_alarm);
       // Send all data to backend - End
-      const result = fetch(this.jsonData.backend + '/anomalies', {
+      fetch(this.jsonData.backend + '/anomalies', {
         method: 'POST',
         body: JSON.stringify(query_alarm),
-      }).then(res => res.json())
-      console.log(result)
+      }).then(res => {
+        return res.json();
+      }).then(data => {
+        data.error = false;
+        responses.push((data as DataQueryResponse));
+      });
       console.log(responses);
       return responses;
     }
