@@ -5,7 +5,7 @@ import {
   DataSourceApi,
   LoadingState
 } from '@grafana/data';
-import { DataSourceWithBackend, getDataSourceSrv, toDataQueryError } from '@grafana/runtime';
+import { DataSourceWithBackend, getDataSourceSrv, toDataQueryError, getBackendSrv } from '@grafana/runtime';
 import { cloneDeep } from 'lodash';
 
 import { MyQuery, MyDataSourceOptions } from './types';
@@ -49,9 +49,12 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
   }
 
   batchQueries(mixed: BatchedQueries[], request: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
-    const queries_anomaly_backend = request.targets.filter((t) => {
-      return t.target_datasource?.type === 'svtech-anomalydetection-datasource' || t.target_datasource == null;
-    });
+    const targetRef: string[] = [];
+    request.targets.forEach(target => {
+      if (target.datasource?.type === 'svtech-anomalydetection-datasource') {
+        targetRef.push(target.series);
+      }
+    })
     const runningQueries = mixed.filter(this.isQueryable).map((query, i) =>
       from(query.datasource).pipe(
         mergeMap((api: DataSourceApi) => {
@@ -67,6 +70,13 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
                 state: LoadingState.Loading,
                 key: `mixed-${i}-${response.key || ''}`,
               };
+            }),
+            mergeMap(res => {
+              if (targetRef.includes(query.targets[0].refId)) {
+                return getBackendSrv().post(this.jsonData.backend + '/query', JSON.stringify(res)).then((res) => {return res});
+              } else {
+                return of(res);
+              }
             }),
             toArray(),
             catchError((err) => {
@@ -87,39 +97,7 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
       )
     );
     
-    return forkJoin(runningQueries).pipe(flattenResponses(), map(this.finalizeResponses), map(n => this.generateAlarm(n, queries_anomaly_backend)), mergeAll());
-  }
-
-  generateAlarm(responses: DataQueryResponse[], queries: MyQuery[]): DataQueryResponse[] {
-    const refIDs: string[] = [];
-    if (queries.length === 0) {
-      // If there is no query to generate anomaly
-      return responses;
-    } else {
-      for (let i = 0; i < queries.length; i++) {
-        if (queries[i].series !== null) {
-          // Get all refid need to perform
-          refIDs.push(queries[i].series);
-        }
-      }
-      // To do: async for each refID
-      // Send all data to backend - Start
-      const query_alarm = responses.filter((t) => {
-        return refIDs.includes(t.data[0].refId);
-      })
-      // Send all data to backend - End
-      fetch(this.jsonData.backend + '/anomalies', {
-        method: 'POST',
-        body: JSON.stringify(query_alarm),
-      }).then(res => {
-        return res.json();
-      }).then(data => {
-        data.error = false;
-        responses.push((data as DataQueryResponse));
-      });
-      console.log(responses);
-      return responses;
-    }
+    return forkJoin(runningQueries).pipe(flattenResponses(), map(this.finalizeResponses), mergeAll());
   }
 
   private isQueryable(query: BatchedQueries): boolean {
