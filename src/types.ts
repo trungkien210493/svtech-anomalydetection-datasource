@@ -5,6 +5,7 @@ export interface MyQuery extends DataQuery {
   series: string;
   params: string;
   target_datasource: DataSourceRef;
+  pattern: string;
 }
 
 /**

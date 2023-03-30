@@ -25,6 +25,11 @@ export function QueryEditor (this: any, props: Props, newds: DataSourceInstanceS
     onChange({ ...query, series: event.target.value });
   };
 
+  const onRegexChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onChange, query } = props;
+    onChange({ ...query, pattern: event.target.value });
+  };
+
   useEffect(() => {
     const url = props.datasource.getBackend() + "/list";
     const fetchData = async () => {
@@ -38,7 +43,7 @@ export function QueryEditor (this: any, props: Props, newds: DataSourceInstanceS
     };
     fetchData();
   }, [props.datasource]);
-  const { datasource, params, series } = props.query;
+  const { datasource, params, series, pattern } = props.query;
 
   const onSelect = (val: string) => {
     const { onChange, query } = props;
@@ -65,8 +70,11 @@ export function QueryEditor (this: any, props: Props, newds: DataSourceInstanceS
         <InlineField label="Algorithm">
           <Cascader options={options} onSelect={onSelect}/>
         </InlineField>
-        <InlineField label="Series">
+        <InlineField label="RefID">
           <Input onChange={onSeriesChange} value={series || ''} />
+        </InlineField>
+        <InlineField label="Regex">
+          <Input onChange={onRegexChange} value={pattern || ''} />
         </InlineField>
       </InlineFieldRow>
       <InlineFieldRow>

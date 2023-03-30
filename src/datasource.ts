@@ -17,6 +17,13 @@ export interface BatchedQueries {
   targets: MyQuery[];
 }
 
+export interface AlgorithmConfig {
+  targetRefID: string;
+  regex: string;
+  method: string | undefined;
+  config: {};
+}
+
 export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptions> {
   jsonData: any;
   constructor(instanceSettings: DataSourceInstanceSettings<MyDataSourceOptions>) {
@@ -39,7 +46,6 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
           targets: [query]
       });
     });
-    // return of({ data: [] });
     let result = this.batchQueries(mixed, request);
     return result;
   }
@@ -49,12 +55,17 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
   }
 
   batchQueries(mixed: BatchedQueries[], request: DataQueryRequest<MyQuery>): Observable<DataQueryResponse> {
-    const targetRef: string[] = [];
+    const configs: AlgorithmConfig[] = [];
     request.targets.forEach(target => {
       if (target.datasource?.type === 'svtech-anomalydetection-datasource') {
-        targetRef.push(target.series);
+        configs.push({
+          targetRefID: target.series,
+          regex: target.pattern,
+          method: target.method,
+          config: JSON.parse(target.params)
+        });
       }
-    })
+    });
     const runningQueries = mixed.filter(this.isQueryable).map((query, i) =>
       from(query.datasource).pipe(
         mergeMap((api: DataSourceApi) => {
@@ -72,8 +83,9 @@ export class DataSource extends DataSourceWithBackend<MyQuery, MyDataSourceOptio
               };
             }),
             mergeMap(res => {
-              if (targetRef.includes(query.targets[0].refId)) {
-                return getBackendSrv().post(this.jsonData.backend + '/query', JSON.stringify(res)).then((res) => {return res});
+              const conf = configs.find(x => x.targetRefID === query.targets[0].refId);
+              if (conf !== undefined) {
+                return getBackendSrv().post(this.jsonData.backend + '/query', {data: res, regex: conf.regex, method: conf.method, config: conf.config}).then((res) => {return res});
               } else {
                 return of(res);
               }
