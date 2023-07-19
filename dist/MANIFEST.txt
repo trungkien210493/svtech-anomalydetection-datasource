@@ -1,0 +1,39 @@
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
+
+{
+  "manifestVersion": "2.0.0",
+  "signatureType": "private",
+  "signedByOrg": "trungkien2104",
+  "signedByOrgName": "svtech",
+  "rootUrls": [
+    "http://localhost:3000/",
+    "http://localhost/",
+    "http://localhost/grafana/"
+  ],
+  "plugin": "svtech-anomalydetection-datasource",
+  "version": "1.0.0",
+  "time": 1689739138279,
+  "keyId": "7e4d0c6a708866e7",
+  "files": {
+    "module.js.map": "1ff469aa8e4f60f30d72d8d763bd43f591b78bf56402f7673a3ec340f19c168c",
+    "README.md": "1c906a8d0f4dc886b431ded364248e3e3b93a3c6e6111f3387b24f748bfc7780",
+    "img/logo.svg": "1defc6f7e585c67657bcfd8fddc599ee7dfa82f8674413f49fa274c2cd453ec6",
+    "CHANGELOG.md": "ba613d6f914b27dce9ace4d8c0cb074273c9eb6c536d8e7ac24c5ce6ae941fd0",
+    "LICENSE": "c5accbbd8546e94c34aed24afe689a617627d18eed5a6c48277e48db57c23851",
+    "plugin.json": "0b34cc6129b2e8e3e5d033c19416910c21a57726589f35a4039828ccdbe5677a",
+    "module.js": "d91de0de9cf47d1ccfa671159da89d4ffbde42447e2e3ae9950e2f3c6b0774e2"
+  }
+}
+-----BEGIN PGP SIGNATURE-----
+Version: OpenPGP.js v4.10.10
+Comment: https://openpgpjs.org
+
+wrkEARMKAAYFAmS3X4IAIQkQfk0ManCIZucWIQTzOyW2kQdOhGNlcPN+TQxq
+cIhm58zSAgkBkG3cWxxJKyRrj25/cm6v5sswl9hlUV7rcZiKn1zTbWmcw7L9
+ME6h+pCROllGn+owb0PW9/gT7ZYhnbMx1FoXbDwCCQGlbf2zbKw7WcQ2h4C0
+qJbGRljdW9ZlV5ugy4beNWTAP07tP71SIZrTKYbBx1dDTz+r0t8iFyYfEfv2
+wgZJeSUzlA==
+=+tGu
+-----END PGP SIGNATURE-----
